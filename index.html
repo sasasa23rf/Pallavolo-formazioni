@@ -236,18 +236,31 @@
               <button style={buttonStyle} onClick={onClose}>Chiudi</button>
             </div>
 
-            {teams && (
-              <div style={{ display: 'flex', gap: '20px', marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <div style={{ flex: 1, backgroundColor: '#f0fdf4', padding: '12px', borderRadius: 8}}>
-                  <h3 style={{marginTop: 0, color: '#166534'}}>Squadra A</h3>
-                  <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamA.map((p, i) => <li key={i}>{p}</li>)}</ul>
-                </div>
-                <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', borderRadius: 8}}>
-                  <h3 style={{marginTop: 0, color: '#1e293b'}}>Squadra B</h3>
-                  <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamB.map((p, i) => <li key={i}>{p}</li>)}</ul>
-                </div>
-              </div>
-            )}
+            
+{teams && (
+  <>
+    <div style={{ display: 'flex', gap: '20px', marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }} id="teams-to-save">
+      <div style={{ flex: 1, backgroundColor: '#f0fdf4', padding: '12px', borderRadius: 8}}>
+        <h3 style={{marginTop: 0, color: '#166534'}}>Squadra A</h3>
+        <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamA.map((p, i) => <li key={i}>{p}</li>)}</ul>
+      </div>
+      <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', borderRadius: 8}}>
+        <h3 style={{marginTop: 0, color: '#1e293b'}}>Squadra B</h3>
+        <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamB.map((p, i) => <li key={i}>{p}</li>)}</ul>
+      </div>
+    </div>
+    <button style={{marginTop: '16px', ...buttonStyle}} onClick={() => {
+      const el = document.getElementById('teams-to-save');
+      html2canvas(el).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'squadre-' + Date.now() + '.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }}>📸 Salva Immagine Squadre</button>
+  </>
+)}
+
           </div>
         </div>
       );
@@ -554,4 +567,3 @@
   </script>
 </body>
 </html>
-
