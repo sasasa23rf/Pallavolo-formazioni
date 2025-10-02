@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏐 Volley Sturno 🏐</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    const GRID_POSITIONS = [
+      [1, 2], [0, 2], [0, 1], [0, 0], [1, 0], [1, 1],
+    ];
+
+    const ROLE_LABELS = {
+      0: 'Zona di servizio',
+      1: 'Banda destra',
+      2: 'Palleggiatore',
+      3: 'Banda sinistra',
+      4: 'Difesa sinistra',
+      5: 'Centrale'
+    };
+
+    const emptyPlayer = () => ({ name: "", role: "", position: "" });
+
+    function rotateClockwise(lineup) {
+      if (!Array.isArray(lineup) || lineup.length !== 6) return lineup;
+      return [lineup[1], lineup[2], lineup[3], lineup[4], lineup[5], lineup[0]];
+    }
+
+    function allRotationsFrom(lineup) {
+      const rots = [];
+      let current = Array.isArray(lineup) ? lineup.slice() : Array.from({ length: 6 }, () => emptyPlayer());
+      for (let i = 0; i < 6; i++) {
+        rots.push(current.slice());
+        current = rotateClockwise(current);
+      }
+      return rots;
+    }
+
+    function Court({ lineup, compact = false, showRoles = false, large = false }) {
+      const grid = Array.from({ length: 2 }, () => Array.from({ length: 3 }, () => null));
+      (lineup || []).forEach((p, idx) => {
+        const [r, c] = GRID_POSITIONS[idx];
+        const roleLabel = large ? ROLE_LABELS[idx] : '';
+        grid[r][c] = { ...p, posNumber: idx + 1, roleLabel };
+      });
+
+      const containerStyle = {
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: compact ? 6 : 10,
+        width: "100%",
+        maxWidth: large ? 400 : compact ? 240 : 300,
+        margin: "0 auto",
+      };
+
+      const cellBase = {
+        position: "relative",
+        aspectRatio: "1/1",
+        borderRadius: 12,
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: large ? "flex-end" : "center",
+        padding: 8,
+        paddingBottom: large ? 12 : 8,
+        textAlign: "center",
+        overflow: 'hidden',
+      };
+
+      const nameStyle = {
+        fontWeight: 600,
+        fontSize: compact ? 14 : 16, 
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        maxWidth: '90%',
+        marginBottom: 2,
+      };
+
+      const roleStyle = {
+        fontSize: compact ? 10 : 12,
+        opacity: 0.7,
+        marginTop: 2,
+        marginBottom: 0,
+      };
+
+      const positionStyle = {
+        fontSize: 14,
+        opacity: 0.7,
+        marginTop: 1,
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      };
+
+      const posLabelStyle = {
+        fontSize: compact ? 11 : 12,
+        opacity: 0.75,
+        position: "absolute",
+        top: 8,
+        left: 8,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: '0.4em'
+      };
+
+      return (
+        <div style={containerStyle}>
+          {grid.map((row, rIdx) =>
+            row.map((cell, cIdx) => (
+              <div
+                key={`${rIdx}-${cIdx}`}
+                style={{ ...cellBase, backgroundColor: rIdx === 0 ? "#ecfdf5" : "#d1fae5" }}
+              >
+                <div style={posLabelStyle}>
+                  <span style={{fontWeight: 600}}>{cell?.posNumber ?? ""}</span>
+                  {cell?.roleLabel && <span style={{ fontSize: 10, opacity: 0.7 }}>{cell.roleLabel}</span>}
+                </div>
+                <div style={nameStyle} title={cell?.name}>
+                  {cell?.name || '—'}
+                </div>
+                {large && (
+                  <>
+                    {cell?.role && (
+                      <div style={roleStyle}>{cell.role}</div>
+                    )}
+                    {cell?.position && (
+                      <div style={positionStyle}>{cell.position}</div>
+                    )}
+                  </>
+                )}
+                {showRoles && !large && cell?.role && (
+                  <div style={roleStyle}>{cell.role}</div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      );
+    }
+    
+    function TeamGenerator({ onClose }) {
+      const [playerNames, setPlayerNames] = useState(Array(15).fill(''));
+      const [teams, setTeams] = useState(null);
+
+      const handleNameChange = (index, value) => {
+        const newNames = [...playerNames];
+        newNames[index] = value;
+        setPlayerNames(newNames);
+        setTeams(null); // Reset teams when names change
+      };
+
+      const handleGenerate = () => {
+        const filledNames = playerNames.filter(name => name.trim() !== '');
+        if (filledNames.length < 2) {
+          return;
+        }
+        const shuffled = [...filledNames].sort(() => 0.5 - Math.random());
+        const midIndex = Math.ceil(shuffled.length / 2);
+        const teamA = shuffled.slice(0, midIndex);
+        const teamB = shuffled.slice(midIndex);
+        setTeams({ teamA, teamB });
+      };
+      
+      const handleClear = () => {
+          setPlayerNames(Array(15).fill(''));
+          setTeams(null);
+      };
+
+      const modalOverlayStyle = {
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000,
+      };
+
+      const modalContentStyle = {
+        backgroundColor: 'white',
+        padding: '24px',
+        borderRadius: '12px',
+        boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
+        width: '90%',
+        maxWidth: '600px',
+        maxHeight: '85vh',
+        display: 'flex',
+        flexDirection: 'column',
+      };
+      
+      const inputStyle = { 
+        padding: '8px 10px', borderRadius: 8, 
+        border: "1px solid #cbd5e1", width: "100%",
+        fontSize: 14, boxSizing: 'border-box'
+      };
+      
+      const buttonStyle = {
+        padding: "8px 16px", borderRadius: 8,
+        border: "1px solid #cbd5e1", backgroundColor: "white",
+        cursor: "pointer", fontSize: 14, fontWeight: 500
+      };
+
+      return (
+        <div style={modalOverlayStyle} onClick={onClose}>
+          <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
+            <h2 style={{marginTop: 0, textAlign: 'center'}}>Genera Squadre Casuali</h2>
+            <p style={{textAlign: 'center', marginTop: 0, color: '#64748b'}}>Inserisci i nomi dei giocatori (minimo 2, massimo 15).</p>
+            
+            <div style={{ overflowY: 'auto', paddingRight: '12px', flexShrink: 1, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: '12px' }}>
+                {playerNames.map((name, index) => (
+                  <input 
+                    key={index} 
+                    style={inputStyle}
+                    value={name}
+                    onChange={(e) => handleNameChange(index, e.target.value)}
+                    placeholder={`Giocatore ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+              <button style={{...buttonStyle, backgroundColor: '#10b981', color: 'white', border: 'none'}} onClick={handleGenerate}>🔀 Genera</button>
+              <button style={{...buttonStyle, color: '#dc2626'}} onClick={handleClear}>🗑️ Pulisci</button>
+              <button style={buttonStyle} onClick={onClose}>Chiudi</button>
+            </div>
+
+            {teams && (
+              <div style={{ display: 'flex', gap: '20px', marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                <div style={{ flex: 1, backgroundColor: '#f0fdf4', padding: '12px', borderRadius: 8}}>
+                  <h3 style={{marginTop: 0, color: '#166534'}}>Squadra A</h3>
+                  <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamA.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                </div>
+                <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', borderRadius: 8}}>
+                  <h3 style={{marginTop: 0, color: '#1e293b'}}>Squadra B</h3>
+                  <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamB.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function VolleyRotationPlanner() {
+      const [lineup, setLineup] = useState(Array.from({ length: 6 }, () => emptyPlayer()));
+      const [isMenuOpen, setIsMenuOpen] = useState(false);
+      const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+      const rotations = useMemo(() => allRotationsFrom(lineup), [lineup]);
+
+      const updatePlayer = (idx, data) => {
+        setLineup((prev) => {
+          const next = prev.map((p) => ({ ...p }));
+          next[idx] = { ...next[idx], ...data };
+          return next;
+        });
+      };
+
+      const clearAll = () => {
+        setLineup(Array.from({ length: 6 }, () => emptyPlayer()));
+      };
+      
+      const saveFormationImage = () => {
+        const element = document.getElementById("formation-to-save");
+        if (element && typeof html2canvas !== "undefined") {
+          html2canvas(element, {
+            backgroundColor: "#ffffff",
+            scale: 2,
+            logging: false
+          }).then(canvas => {
+            const link = document.createElement("a");
+            link.download = "formazione-pallavolo-" + Date.now() + ".png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+          }).catch(err => {
+            console.error("Errore nel salvare l'immagine: ", err);
+          });
+        } else {
+          console.error("Libreria html2canvas non caricata o elemento non trovato.");
+        }
+      };
+
+      const loadExample = () => {
+        setLineup([
+          { name: "Marco", role: "Palleggiatore", position: "X1" },
+          { name: "Luca", role: "Schiacciatore", position: "X2" },
+          { name: "Paolo", role: "Tutto", position: "X3" },
+          { name: "Giovanni", role: "Schiacciatore", position: "X1" },
+          { name: "Andrea", role: "Tutto", position: "X2" },
+          { name: "Francesco", role: "Schiacciatore", position: "X3" }
+        ]);
+      };
+
+      const containerStyle = { 
+        padding: 16, 
+        fontFamily: "Inter, system-ui, sans-serif", 
+        maxWidth: 1200, 
+        margin: "0 auto",
+        backgroundColor: "#f8fafc",
+        minHeight: "100vh"
+      };
+
+      const inputStyle = { 
+        padding: 6, 
+        borderRadius: 8, 
+        border: "1px solid #cbd5e1", 
+        width: "100%",
+        fontSize: 13,
+        boxSizing: 'border-box'
+      };
+
+      const buttonStyle = {
+        padding: "8px 16px",
+        borderRadius: 8,
+        border: "1px solid #cbd5e1",
+        backgroundColor: "white",
+        cursor: "pointer",
+        fontSize: 14,
+        fontWeight: 500
+      };
+      
+      const menuItemStyle = {
+          display: 'block',
+          width: '100%',
+          padding: '8px 16px',
+          border: 'none',
+          backgroundColor: 'transparent',
+          cursor: 'pointer',
+          textAlign: 'left',
+          fontSize: 14
+      };
+
+      return (
+        <div style={containerStyle}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <h1 style={{ margin: 0, fontSize: 28, color: "#1e293b" }}>🏐 Volley Sturno 🏐</h1>
+            <p style={{ color: "#64748b", marginTop: 8 }}>Pianifica e visualizza tutte le rotazioni della tua squadra</p>
+          </div>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", marginBottom: 20 }}>
+            <div style={{ position: "relative" }}>
+                <button 
+                    style={buttonStyle} 
+                    onClick={() => setIsMenuOpen(prev => !prev)}
+                    aria-haspopup="true"
+                    aria-expanded={isMenuOpen}
+                >
+                    ☰ Menù
+                </button>
+                {isMenuOpen && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 4px)',
+                        left: 0,
+                        backgroundColor: 'white',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                        zIndex: 10,
+                        minWidth: '190px',
+                        border: '1px solid #e2e8f0',
+                        overflow: 'hidden',
+                        padding: '4px 0',
+                    }}>
+                        <button
+                            style={menuItemStyle}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={() => {
+                                saveFormationImage();
+                                setIsMenuOpen(false);
+                            }}
+                        >
+                           📷 Salva Formazione
+                        </button>
+                        <button
+                            style={menuItemStyle}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={() => {
+                                setIsGeneratorOpen(true);
+                                setIsMenuOpen(false);
+                            }}
+                        >
+                           🔀 Genera Squadre
+                        </button>
+                        <button
+                            style={{ ...menuItemStyle, color: "#dc2626" }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={() => {
+                                clearAll();
+                                setIsMenuOpen(false);
+                            }}
+                        >
+                            🗑️ Cancella tutto
+                        </button>
+                    </div>
+                )}
+            </div>
+            <button style={buttonStyle} onClick={loadExample}>
+              📋 Carica esempio
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 320px", minWidth: 280, backgroundColor: "white", padding: 20, borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Giocatori (posizioni 1 → 6)</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                {lineup.map((p, idx) => (
+                  <div key={idx} style={{ display: "grid", gridTemplateColumns: "32px 1fr 70px 60px", gap: 6, alignItems: "center" }}>
+                    <div style={{ 
+                      width: 32, 
+                      height: 32,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#f1f5f9",
+                      borderRadius: 6,
+                      fontWeight: 700,
+                      fontSize: 14
+                    }}>
+                      {idx + 1}
+                    </div>
+                    <input
+                      style={inputStyle}
+                      placeholder={`Giocatore ${idx + 1}`}
+                      value={p.name}
+                      onChange={(e) => updatePlayer(idx, { name: e.target.value })}
+                    />
+                    <select
+                      value={p.role}
+                      onChange={(e) => updatePlayer(idx, { role: e.target.value })}
+                      style={{ ...inputStyle, cursor: "pointer", fontSize: 12, padding: "6px 4px" }}
+                    >
+                      <option value="">Ruolo</option>
+                      <option value="Palleggiatore">Pallegg.</option>
+                      <option value="Schiacciatore">Schiacc.</option>
+                      <option value="Tutto">Tutto</option>
+                    </select>
+                    <select
+                      value={p.position}
+                      onChange={(e) => updatePlayer(idx, { position: e.target.value })}
+                      style={{ ...inputStyle, cursor: "pointer" }}
+                    >
+                      <option value="">Pos.</option>
+                      <option value="X1">X1</option>
+                      <option value="X2">X2</option>
+                      <option value="X3">X3</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ 
+              flex: "1 1 420px", 
+              minWidth: 320, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              backgroundColor: "white",
+              padding: 20,
+              borderRadius: 12,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+            }} id="formation-to-save">
+              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>
+                🎯 Formazione corrente
+              </h3>
+              <Court lineup={lineup} showRoles large />
+              <div style={{ 
+                marginTop: 16, 
+                padding: 12, 
+                backgroundColor: "#f8fafc", 
+                borderRadius: 8,
+                fontSize: 12,
+                color: "#64748b",
+                textAlign: "center",
+                maxWidth: 400
+              }}>
+                <strong>Legenda:</strong> Verde chiaro = Rete (prima linea) • Verde scuro = Campo (seconda linea)
+              </div>
+            </div>
+          </div>
+
+          <div style={{ 
+            marginTop: 32, 
+            width: '100%',
+            backgroundColor: "white",
+            padding: 20,
+            borderRadius: 12,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+          }}>
+            <h3 style={{ textAlign: "center", marginTop: 0, marginBottom: 20, fontSize: 20 }}>
+              🔄 Tutte le 6 rotazioni
+            </h3>
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", 
+              gap: 16, 
+              marginTop: 12
+            }}>
+              {rotations.map((rot, i) => (
+                <div key={i} style={{ 
+                  border: "2px solid #e2e8f0", 
+                  borderRadius: 12, 
+                  padding: 16,
+                  backgroundColor: "#fafafa",
+                  transition: "transform 0.2s",
+                }}>
+                  <div style={{ 
+                    fontWeight: 700, 
+                    marginBottom: 12, 
+                    fontSize: 16,
+                    color: "#1e293b",
+                    textAlign: "center"
+                  }}>
+                    Rotazione {i + 1}
+                  </div>
+                  <Court lineup={rot} compact />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{
+            textAlign: 'center',
+            marginTop: 48,
+            paddingTop: 24,
+            borderTop: '1px solid #e2e8f0',
+            color: '#64748b',
+            fontSize: 13
+          }}>
+            <p style={{margin: 0}}>App creata da Salvatore Costantino</p>
+            <p style={{margin: '4px 0 0 0'}}>Ogni diritto è riservato</p>
+          </div>
+          
+          {isGeneratorOpen && <TeamGenerator onClose={() => setIsGeneratorOpen(false)} />}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<VolleyRotationPlanner />, document.getElementById('root'));
+  </script>
+</body>
+</html>
+
