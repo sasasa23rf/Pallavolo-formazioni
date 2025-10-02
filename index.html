@@ -270,6 +270,27 @@
       const [lineup, setLineup] = useState(Array.from({ length: 6 }, () => emptyPlayer()));
       const [isMenuOpen, setIsMenuOpen] = useState(false);
       const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+      const [view, setView] = useState('main');
+
+      const playersData = [
+        "Angelo Grella",
+        "Rocco Grella",
+        "Michele Telese", 
+        "Angelo Telese",
+        "Salvatore Costantino",
+        "Marino Stanco",
+        "Anna Senatore",
+        "Domenico Senatore",
+        "Antonio Iorillo",
+        "Gessica Grieco",
+        "Mariapia Pascucci",
+        "Donato Stanco",
+        "Federica Giorgione",
+        "Nicola Giso",
+        "Rosaria Pascuccio",
+        "Martina Telese",
+      ];
+
       const rotations = useMemo(() => allRotationsFrom(lineup), [lineup]);
 
       const updatePlayer = (idx, data) => {
@@ -354,6 +375,68 @@
           fontSize: 14
       };
 
+      
+      if (view === "players") {
+        return (
+          <div style={{
+            fontFamily: "Arial, sans-serif",
+            maxWidth: "800px",
+            margin: "0 auto",
+            padding: "20px"
+          }}>
+            <div style={{
+              backgroundColor: "#003087",
+              color: "white", 
+              padding: "20px",
+              borderRadius: "10px 10px 0 0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <h2 style={{ margin: 0 }}>🏐 Lista Giocatori</h2>
+              <button
+                onClick={() => setView("main")}
+                style={{
+                  backgroundColor: "#FFD700",
+                  border: "none",
+                  padding: "10px 20px", 
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  fontWeight: "bold"
+                }}
+              >
+                Indietro
+              </button>
+            </div>
+            <div style={{
+              backgroundColor: "#f5f5f5",
+              padding: "20px",
+              borderRadius: "0 0 10px 10px",
+              minHeight: "400px"
+            }}>
+              <ul style={{
+                listStyleType: "none",
+                padding: 0
+              }}>
+                {playersData.map((player, index) => (
+                  <li key={index} style={{
+                    backgroundColor: "white",
+                    margin: "10px 0",
+                    padding: "15px",
+                    borderRadius: "5px", 
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    fontSize: "18px",
+                    fontWeight: "500"
+                  }}>
+                    {player}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div style={containerStyle}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
@@ -418,6 +501,43 @@
                         >
                             🗑️ Cancella tutto
                         </button>
+
+
+
+
+
+
+<button
+    style={menuItemStyle}
+    onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+    onClick={() => {
+        setView("players");
+        setIsMenuOpen(false);
+    }}
+>
+   👥 Giocatori
+</button>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     </div>
                 )}
             </div>
