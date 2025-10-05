@@ -47,6 +47,27 @@
     }
 
     function Court({ lineup, compact = false, showRoles = false, large = false }) {
+      // Freccia da 4 a 3 per Palleggiatore X3
+      const showSetterArrow4to3_X3 = useMemo(() => {
+        if (!compact) return false;
+        const playerInPos4 = lineup && lineup[3];
+        return playerInPos4 && playerInPos4.role === 'Palleggiatore' && playerInPos4.position === 'X3';
+      }, [lineup, compact]);
+
+      // Freccia da 2 a 3 per Palleggiatore X3
+      const showSetterArrow2to3_X3 = useMemo(() => {
+        if (!compact) return false;
+        const playerInPos2 = lineup && lineup[1];
+        return playerInPos2 && playerInPos2.role === 'Palleggiatore' && playerInPos2.position === 'X3';
+      }, [lineup, compact]);
+
+      // Freccia da 4 a 3 per Palleggiatore X2
+      const showSetterArrow4to3_X2 = useMemo(() => {
+        if (!compact) return false;
+        const playerInPos4 = lineup && lineup[3];
+        return playerInPos4 && playerInPos4.role === 'Palleggiatore' && playerInPos4.position === 'X2';
+      }, [lineup, compact]);
+
       const grid = Array.from({ length: 2 }, () => Array.from({ length: 3 }, () => null));
       (lineup || []).forEach((p, idx) => {
         const [r, c] = GRID_POSITIONS[idx];
@@ -55,6 +76,7 @@
       });
 
       const containerStyle = {
+        position: "relative",
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
         gap: compact ? 6 : 10,
@@ -115,9 +137,45 @@
         alignItems: 'baseline',
         gap: '0.4em'
       };
+      
+      const arrowLeftToRightStyle = {
+        position: 'absolute',
+        left: '16.67%',
+        top: '-8px',
+        width: '33.33%',
+        height: '10px',
+        overflow: 'visible',
+        zIndex: 1,
+      };
+      
+      const arrowRightToLeftStyle = {
+        position: 'absolute',
+        left: '50%',
+        top: '-8px',
+        width: '33.33%',
+        height: '10px',
+        overflow: 'visible',
+        zIndex: 1,
+      };
 
       return (
         <div style={containerStyle}>
+          {/* Freccia da 4 a 3 (punta a destra) */}
+          {(showSetterArrow4to3_X3 || showSetterArrow4to3_X2) && (
+            <svg style={arrowLeftToRightStyle} viewBox="0 0 100 10" preserveAspectRatio="none">
+              <path d="M 0 5 L 90 5" stroke="#dc2626" strokeWidth="2" strokeDasharray="4, 3" />
+              <path d="M 100 5 L 90 1 L 90 9 Z" fill="#dc2626" />
+            </svg>
+          )}
+
+          {/* Freccia da 2 a 3 (punta a sinistra) */}
+          {showSetterArrow2to3_X3 && (
+            <svg style={arrowRightToLeftStyle} viewBox="0 0 100 10" preserveAspectRatio="none">
+              <path d="M 10 5 L 100 5" stroke="#dc2626" strokeWidth="2" strokeDasharray="4, 3" />
+              <path d="M 0 5 L 10 1 L 10 9 Z" fill="#dc2626" />
+            </svg>
+          )}
+
           {grid.map((row, rIdx) =>
             row.map((cell, cIdx) => (
               <div
@@ -245,7 +303,7 @@
         <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamA.map((p, i) => <li key={i}>{p}</li>)}</ul>
       </div>
       <div style={{ flex: 1, backgroundColor: '#f1f5f9', padding: '12px', borderRadius: 8}}>
-        <h3 style={{marginTop: 0, color: '#1e293b'}}>Squadra B</h3>
+        <h3 style={{marginTop: 0, color: '#1e2b3b'}}>Squadra B</h3>
         <ul style={{paddingLeft: 20, margin: 0}}>{teams.teamB.map((p, i) => <li key={i}>{p}</li>)}</ul>
       </div>
     </div>
@@ -683,7 +741,10 @@
       );
     }
 
-    ReactDOM.render(<VolleyRotationPlanner />, document.getElementById('root'));
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<VolleyRotationPlanner />);
   </script>
 </body>
 </html>
+
